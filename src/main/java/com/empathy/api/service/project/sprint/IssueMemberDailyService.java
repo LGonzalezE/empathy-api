@@ -9,24 +9,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.empathy.api.controller.board.BoardController;
 import com.empathy.model.project.Issue;
-import com.empathy.model.project.IssueLink;
-import com.empathy.model.project.IssueLinkId;
 import com.empathy.model.project.sprint.Backlog;
 import com.empathy.model.project.sprint.BacklogId;
 import com.empathy.model.project.sprint.IssueMemberDaily;
 import com.empathy.model.project.sprint.IssueMemberDailyId;
-import com.empathy.repository.project.IssueLinkRepository;
 import com.empathy.repository.project.IssueRepository;
 import com.empathy.repository.project.sprint.BacklogRepository;
 import com.empathy.repository.project.sprint.IssueMemberDailyRepository;
-import com.empathy.types.IssueLinkType;
 import com.empathy.types.IssueType;
 
 @Service
 public class IssueMemberDailyService implements IIssueMemberDailyService {
-	Logger logger = LoggerFactory.getLogger(BoardController.class);
+	Logger logger = LoggerFactory.getLogger(IssueMemberDailyService.class);
 
 	@Autowired
 	private IssueMemberDailyRepository repository;
@@ -34,8 +29,6 @@ public class IssueMemberDailyService implements IIssueMemberDailyService {
 	@Autowired
 	private IssueRepository issueRepository;
 
-	@Autowired
-	private IssueLinkRepository issueLinkRepository;
 
 	@Autowired
 	private BacklogRepository backlogRepository;
@@ -66,15 +59,6 @@ public class IssueMemberDailyService implements IIssueMemberDailyService {
 				issue.setIssueID(null);
 				issue.setTypeID(IssueType.IMPEDIMENT);
 				issueRepository.save(issue);
-				// link impediment to issue
-				IssueLink issueLink = new IssueLink();
-				IssueLinkId issueLinkId = new IssueLinkId();
-				issueLinkId.setParentID(issueMemberDaily.getIssueMemberDailyID().getIssueID());
-				issueLinkId.setChildID(issue.getIssueID());
-				issueLink.setIssueLinkID(issueLinkId);
-				issueLink.setTypeID(IssueLinkType.ISBLOCKEDBY);
-				issueLink.setCreatedBy(issueMemberDaily.getIssueMemberDailyID().getMemberID());
-				issueLinkRepository.save(issueLink);
 				
 				//add issue to sprint backlog
 				Backlog backlog= new Backlog();
