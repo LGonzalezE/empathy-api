@@ -1,5 +1,6 @@
 package com.empathy.api.service.project.sprint;
 
+import java.util.Date;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -17,6 +18,7 @@ import com.empathy.model.project.sprint.IssueMemberDailyId;
 import com.empathy.repository.project.IssueRepository;
 import com.empathy.repository.project.sprint.BacklogRepository;
 import com.empathy.repository.project.sprint.IssueMemberDailyRepository;
+import com.empathy.types.IssueStatus;
 import com.empathy.types.IssueType;
 
 @Service
@@ -29,10 +31,9 @@ public class IssueMemberDailyService implements IIssueMemberDailyService {
 	@Autowired
 	private IssueRepository issueRepository;
 
-
 	@Autowired
 	private BacklogRepository backlogRepository;
-	
+
 	@Override
 	public List<IssueMemberDaily> findAll() {
 		return (List<IssueMemberDaily>) repository.findAll();
@@ -42,6 +43,40 @@ public class IssueMemberDailyService implements IIssueMemberDailyService {
 	@Override
 	public IssueMemberDaily save(IssueMemberDaily issueMemberDaily) throws Exception {
 
+		issueMemberDaily.getIssueMemberDailyID().setDailyDate(new Date());
+
+		Issue currentIssue = issueRepository.findById(issueMemberDaily.getIssueMemberDailyID().getIssueID()).get();
+
+		// El usuario no debe registrar avances sobre incidentes cerrados
+		if (currentIssue.getStatusID() == IssueStatus.DONE) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "can't update issue when is DONE");
+		}
+
+		// El usuario no puede registrar impedimentos de incidentes dónde no es el
+		// responsable
+		logger.debug("ownerID: {}, memberID: {}", currentIssue.getOwnerID(),
+				issueMemberDaily.getIssueMemberDailyID().getMemberID());
+		if (!currentIssue.getOwnerID().equals(issueMemberDaily.getIssueMemberDailyID().getMemberID())) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "can only update the owner");
+		}
+
+		if (issueMemberDaily.getStatusID() == IssueStatus.DONE) {
+			List<Issue> childs = issueRepository.findChildByIssueID(currentIssue.getIssueID());
+
+			// Un incidente no puede ser cerrado si uno o más de los sub-incidentes están
+			// abiertos
+			for (Issue child : childs) {
+				switch (child.getStatusID()) {
+				case DONE:
+					break;
+				case ABORTED:
+					break;
+				default:
+					throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "there are issues opened");
+				}
+			}
+		}
+
 		switch (issueMemberDaily.getStatusID()) {
 		case TODO:
 			break;
@@ -50,28 +85,36 @@ public class IssueMemberDailyService implements IIssueMemberDailyService {
 		case DONE:
 			break;
 		case BLOCKED:
+
 			if (issueMemberDaily.getImpediments().size() == 0)
 				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "impediment required");
 
-			for(Issue issue : issueMemberDaily.getImpediments())
-			{
+			// El usuario puede registrar diariamente impedimentos para avanzar en los
+			// incidentes
+
+			for (Issue impediment : issueMemberDaily.getImpediments()) {
 				// create impediment
-				issue.setIssueID(null);
-				issue.setTypeID(IssueType.IMPEDIMENT);
-				issueRepository.save(issue);
-				
-				//add issue to sprint backlog
-				Backlog backlog= new Backlog();
-				BacklogId backlogID = new BacklogId();				
-				backlogID.setIssueID(issue.getIssueID());
-				backlogID.setProjectID(issue.getProjectID());
+				impediment.setIssueID(null);
+				impediment.setParentID(null);
+				impediment.setProjectID(currentIssue.getProjectID());
+				impediment.setTypeID(IssueType.IMPEDIMENT);
+				impediment.setStatusID(IssueStatus.TODO);
+				impediment.setEstimatedDate(new Date());
+				impediment.setOwnerID(currentIssue.getOwnerID());
+				issueRepository.save(impediment);
+
+				// add issue to sprint backlog
+				Backlog backlog = new Backlog();
+				BacklogId backlogID = new BacklogId();
+				backlogID.setIssueID(impediment.getIssueID());
+				backlogID.setProjectID(impediment.getProjectID());
 				backlogID.setSprintID(issueMemberDaily.getIssueMemberDailyID().getSprintID());
 				backlog.setBacklogID(backlogID);
 				backlog.setIssueOrder(0);
-				backlog.setCreatedBy(issueMemberDaily.getIssueMemberDailyID().getMemberID());
+				backlog.setCreatedBy(currentIssue.getOwnerID());
 				backlogRepository.save(backlog);
 			}
-			
+
 			break;
 		case ABORTED:
 			break;
@@ -109,3 +152,4 @@ public class IssueMemberDailyService implements IIssueMemberDailyService {
 	}
 
 }
+

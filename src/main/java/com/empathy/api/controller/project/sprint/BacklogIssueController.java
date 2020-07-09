@@ -19,13 +19,13 @@ public class BacklogIssueController {
 	private IBacklogIssueService service;
 
 	@GetMapping("/{parentID}/childs/find")
-	public List<BacklogIssue> findByChildsByParentID(@PathVariable String parentID) {
+	public List<BacklogIssue> findByChildsByParentID(@PathVariable String parentID) throws Exception {
 
 		return service.findByChildsByParentID(parentID);
 	}
 	
 	@GetMapping("/sprint/{sprintID}/root")
-	public List<BacklogIssue> findRootBySprintID(@PathVariable String sprintID) {
+	public List<BacklogIssue> findRootBySprintID(@PathVariable String sprintID) throws Exception {
 
 		return service.findRootBySprintID(sprintID);
 	}

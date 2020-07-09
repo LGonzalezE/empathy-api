@@ -6,8 +6,8 @@ import com.empathy.model.project.sprint.BacklogIssue;
 
 public interface IBacklogIssueService {
 
-	List<BacklogIssue> findByChildsByParentID(String parentID);
+	List<BacklogIssue> findByChildsByParentID(String parentID) throws Exception;
 
-	List<BacklogIssue> findRootBySprintID(String sprintID);
+	List<BacklogIssue> findRootBySprintID(String sprintID) throws Exception;
 
 }

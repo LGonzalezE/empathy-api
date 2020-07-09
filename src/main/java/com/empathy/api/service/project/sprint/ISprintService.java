@@ -10,5 +10,5 @@ import com.empathy.types.SprintStatus;
 @Repository
 public interface ISprintService {
 
-	List<Sprint> findByProjectID(String projectID, SprintStatus statusID);
+	List<Sprint> findByProjectID(String projectID, SprintStatus statusID) throws Exception;
 }

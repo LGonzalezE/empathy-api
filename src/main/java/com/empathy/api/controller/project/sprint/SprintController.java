@@ -20,7 +20,7 @@ public class SprintController {
 	private ISprintService service;
 
 	@GetMapping("/project/{projectID}/status/{statusID}/find")
-	public List<Sprint> findByProjectID(@PathVariable String projectID, @PathVariable SprintStatus statusID) {
+	public List<Sprint> findByProjectID(@PathVariable String projectID, @PathVariable SprintStatus statusID) throws Exception {
 
 		return service.findByProjectID(projectID, statusID);
 	}
